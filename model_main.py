@@ -23,7 +23,7 @@ from absl import flags
 import tensorflow as tf
 
 from object_detection import model_hparams
-from Faster_RCNN.Model import model_lib
+from Lib import model_lib
 
 flags.DEFINE_string(
     'model_dir', None, 'Path to output model directory '

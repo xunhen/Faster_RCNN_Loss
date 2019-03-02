@@ -1,28 +1,21 @@
 import numpy as np
 import os
-import six.moves.urllib as urllib
 import sys
-import tarfile
 import tensorflow as tf
-import zipfile
 import lxml.etree as etree
 from object_detection.utils import dataset_util
 
 from distutils.version import StrictVersion
-from collections import defaultdict
-from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
-import tensorflow.contrib.slim as slim
-from object_detection.legacy import trainer
 from object_detection.builders import model_builder
-from Faster_RCNN.Model import model_builder
+#from Faster_RCNN.Model import model_builder
 
 sys.path.append(r'D:\Software\Miniconda\envs\tensorflow\Lib\site-packages\tensorflow\models\research')
 from object_detection.utils import config_util
 from object_detection.utils import ops as utils_ops
 
-from Tools.generate_random_box import random_rpn
+from Tool.generate_random_box import random_rpn
 
 if StrictVersion(tf.__version__) < StrictVersion('1.9.0'):
     raise ImportError('Please upgrade your TensorFlow installation to v1.9.* or later!')
@@ -31,7 +24,7 @@ from utils import label_map_util
 from config import cfg
 
 from utils import visualization_utils as vis_util
-from Tools.create_txt_tf_record import parse_txt
+from Tool.create_txt_tf_record import parse_txt
 
 
 def load_image_into_numpy_array(image):
