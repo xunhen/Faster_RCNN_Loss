@@ -5,7 +5,7 @@ from object_detection.core import box_list_ops
 import numpy as np
 
 
-def filter(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=0.5, min_number=1):
+def filter(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=0.5, min_number=1, max_number=None):
     """Returns proposal_boxes_result and validation.
 
         Args:
@@ -103,7 +103,7 @@ def filter(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=0.5, 
     # test using
     # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
 
-    return proposal_boxes_result, proposal_score_result, validation
+    return proposal_boxes_result, proposal_score_result, validation, max_number  # change ???
 
 
 if __name__ == '__main__':
