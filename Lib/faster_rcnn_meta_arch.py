@@ -693,6 +693,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
                             rpn_box_encodings, rpn_objectness_predictions_with_background, rpn_box_encodings_cascade,
                             rpn_objectness_predictions_with_background_cascade,
                             anchors_boxlist, clip_window)
+                        prediction_dict.update({'rpn_box_encodings_cascade': rpn_box_encodings_cascade,
+                                                'rpn_objectness_predictions_with_background_cascade': rpn_objectness_predictions_with_background_cascade})
                     else:
                         (rpn_box_encodings, rpn_objectness_predictions_with_background,
                          anchors_boxlist) = self._remove_invalid_anchors_and_predictions(
@@ -1835,7 +1837,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
             rpn_box_encodings_cascade = None
             rpn_objectness_predictions_with_background_cascade = None
             if self._rpn_type == 'cascade_rpn':
-                rpn_box_encodings_cascade = prediction_dict['rpn_box_encodings_cascade'],
+                rpn_box_encodings_cascade = prediction_dict['rpn_box_encodings_cascade']
                 rpn_objectness_predictions_with_background_cascade = prediction_dict[
                     'rpn_objectness_predictions_with_background_cascade']
             loss_dict = self._loss_rpn(
@@ -1950,7 +1952,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
                                           objectness_loss, name='objectness_loss')
             loss_dict = {localization_loss.op.name: localization_loss,
                          objectness_loss.op.name: objectness_loss}
-            if self._rpn_type:
+            if self._rpn_type == 'cascade_rpn':
                 localization_cascade_losses = self._first_stage_localization_loss(
                     tf.add(rpn_box_encodings_cascade, rpn_box_encodings),
                     batch_reg_targets,

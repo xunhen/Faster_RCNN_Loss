@@ -57,8 +57,8 @@ FLAGS = flags.FLAGS
 
 FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
 FLAGS.model_dir = 'log/train'
-FLAGS.num_train_steps = 2000
-FLAGS.run_once = False
+# FLAGS.num_train_steps = 2000
+# FLAGS.run_once = False
 # FLAGS.checkpoint_dir = r'Model\faster_rcnn_resnet50_coco_2018_01_28\faster_rcnn_resnet50_coco_2018_01_28\model.ckpt'
 
 rpn_type = 'cascade_rpn'
@@ -72,7 +72,7 @@ filter_fn_arg = None
 def main(unused_argv):
     flags.mark_flag_as_required('model_dir')
     flags.mark_flag_as_required('pipeline_config_path')
-    config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir)
+    config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, save_checkpoints_steps=10000)
 
     train_and_eval_dict = model_lib.create_estimator_and_inputs(
         run_config=config,
@@ -81,7 +81,8 @@ def main(unused_argv):
         train_steps=FLAGS.num_train_steps,
         sample_1_of_n_eval_examples=FLAGS.sample_1_of_n_eval_examples,
         sample_1_of_n_eval_on_train_examples=(
-            FLAGS.sample_1_of_n_eval_on_train_examples))
+            FLAGS.sample_1_of_n_eval_on_train_examples),
+        rpn_type=rpn_type)
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
     eval_input_fns = train_and_eval_dict['eval_input_fns']
