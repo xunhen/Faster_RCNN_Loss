@@ -28,7 +28,7 @@ from object_detection import eval_util
 from object_detection import exporter as exporter_lib
 from object_detection import inputs
 from object_detection.builders import graph_rewriter_builder
-from object_detection.builders import model_builder
+# from object_detection.builders import model_builder
 from object_detection.builders import optimizer_builder
 from object_detection.core import standard_fields as fields
 from object_detection.utils import config_util
@@ -473,6 +473,8 @@ def create_estimator_and_inputs(run_config,
                                 params=None,
                                 override_eval_num_epochs=True,
                                 save_final_config=False,
+                                rpn_type=None,
+                                filter_fn_arg=None,
                                 **kwargs):
     """Creates `Estimator`, input functions, and steps.
 
@@ -567,7 +569,7 @@ def create_estimator_and_inputs(run_config,
         train_steps = train_config.num_steps
 
     detection_model_fn = functools.partial(
-        model_builder.build, model_config=model_config)
+        model_builder.build, model_config=model_config, rpn_type=rpn_type, filter_fn_arg=filter_fn_arg)
 
     # Create the input functions for TRAIN/EVAL/PREDICT.
     train_input_fn = create_train_input_fn(

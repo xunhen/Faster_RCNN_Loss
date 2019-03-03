@@ -72,6 +72,10 @@ def convert(output_dict):
         output_dict['detection_masks'] = output_dict['detection_masks'][0]
     return output_dict
 
+def build_model():
+
+    pass
+
 
 if __name__ == '__main__':
     PATH = r'D:\Software\Miniconda\envs\tensorflow\Lib\site-packages\tensorflow\models\research\object_detection'

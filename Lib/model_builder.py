@@ -57,6 +57,7 @@ from object_detection.utils import ops
 # add by wjc
 from Lib import faster_rcnn_resnet_v1_feature_extractor as frcnn_resnet_v1
 from Lib import faster_rcnn_meta_arch
+from Tool.filter import filter_bbox
 
 # A map of names to SSD feature extractors.
 SSD_FEATURE_EXTRACTOR_CLASS_MAP = {
@@ -519,7 +520,7 @@ def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries, **kwargs)
 
     filter_fn_arg = kwargs.get('filter_fn_arg')
     if filter_fn_arg:
-        filter_fn = functools.partial(filter, **filter_fn_arg)
+        filter_fn = functools.partial(filter_bbox, **filter_fn_arg)
         common_kwargs['filter_fn'] = filter_fn
 
     rpn_type = kwargs.get('rpn_type')

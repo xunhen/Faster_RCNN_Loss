@@ -662,19 +662,10 @@ class FasterRCNNMetaArch(model.DetectionModel):
         """
         (rpn_box_predictor_features, rpn_features_to_crop, anchors_boxlist,
          image_shape, rpn_box_predictor_features_cascade) = self._extract_rpn_feature_maps(preprocessed_inputs)
-
+        prediction_dict = dict()
         # change---wjc
         if self._rpn_type == 'without_rpn':
             rpn_box_encodings, rpn_objectness_predictions_with_background = self._get_rpn_box()
-            prediction_dict = {
-                'rpn_box_predictor_features': rpn_box_predictor_features,
-                'rpn_features_to_crop': rpn_features_to_crop,
-                'image_shape': image_shape,
-                'rpn_box_encodings': rpn_box_encodings,
-                'rpn_objectness_predictions_with_background':
-                    rpn_objectness_predictions_with_background,
-                'anchors': self._anchors.get()  # need ??
-            }
         else:
             (rpn_box_encodings, rpn_objectness_predictions_with_background
              ) = self._predict_rpn_proposals(rpn_box_predictor_features)
@@ -684,6 +675,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
                 (rpn_box_encodings_cascade, rpn_objectness_predictions_with_background_cascade
                  ) = self._predict_rpn_proposals(rpn_box_predictor_features_cascade,
                                                  self.first_stage_box_predictor_cascade_scope)
+                prediction_dict.update({'rpn_box_encodings_cascade': rpn_box_encodings_cascade,
+                                        'rpn_objectness_predictions_with_background_cascade': rpn_objectness_predictions_with_background_cascade})
             # The Faster R-CNN paper recommends pruning anchors that venture outside
             # the image window at training time and clipping at inference time.
             clip_window = tf.to_float(tf.stack([0, 0, image_shape[1], image_shape[2]]))
@@ -692,6 +685,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
                     anchors_boxlist = box_list_ops.clip_to_window(
                         anchors_boxlist, clip_window, filter_nonoverlapping=False)
                 else:
+                    # add by wjc
                     if self._rpn_type == 'cascade_rpn':
                         (rpn_box_encodings, rpn_objectness_predictions_with_background, rpn_box_encodings_cascade,
                          rpn_objectness_predictions_with_background_cascade,
@@ -709,17 +703,16 @@ class FasterRCNNMetaArch(model.DetectionModel):
                     anchors_boxlist, clip_window,
                     filter_nonoverlapping=not self._use_static_shapes)
             self._anchors = anchors_boxlist
-            prediction_dict = {
-                'rpn_box_predictor_features': rpn_box_predictor_features,
-                'rpn_features_to_crop': rpn_features_to_crop,
-                'image_shape': image_shape,
-                'rpn_box_encodings': rpn_box_encodings,
-                'rpn_objectness_predictions_with_background':
-                    rpn_objectness_predictions_with_background,
-                'rpn_box_encodings_cascade': rpn_box_encodings_cascade,
-                'rpn_objectness_predictions_with_background_cascade': rpn_objectness_predictions_with_background_cascade,
-                'anchors': self._anchors.get()
-            }
+
+        prediction_dict.update({
+            'rpn_box_predictor_features': rpn_box_predictor_features,
+            'rpn_features_to_crop': rpn_features_to_crop,
+            'image_shape': image_shape,
+            'rpn_box_encodings': rpn_box_encodings,
+            'rpn_objectness_predictions_with_background':
+                rpn_objectness_predictions_with_background,
+            'anchors': self._anchors.get()
+        })
 
         if self._number_of_stages >= 2:
             # If mixed-precision training on TPU is enabled, rpn_box_encodings and
@@ -819,8 +812,10 @@ class FasterRCNNMetaArch(model.DetectionModel):
         """
         image_shape_2d = self._image_batch_shape_2d(image_shape)
         # change by wjc  ???using which score
+        if self._rpn_type == 'cascade_rpn':
+            rpn_box_encodings = tf.add(rpn_box_encodings, rpn_box_encodings_cascade)
         proposal_boxes_normalized, proposal_boxes_scores, num_proposals = self._postprocess_rpn(
-            tf.add(rpn_box_encodings, rpn_box_encodings_cascade), rpn_objectness_predictions_with_background,
+            rpn_box_encodings, rpn_objectness_predictions_with_background,
             anchors, image_shape_2d, true_image_shapes)
 
         # If mixed-precision training on TPU is enabled, the dtype of
@@ -1047,23 +1042,25 @@ class FasterRCNNMetaArch(model.DetectionModel):
                 scope='Conv',
                 reuse=reuse)
             # add by wjc
-            rpn_box_predictor_features_cascade = slim.conv2d(
-                rpn_box_predictor_features,
-                shape_utils.combined_static_and_dynamic_shape(rpn_features_to_crop)[-1],
-                kernel_size=[kernel_size, kernel_size],
-                rate=self._first_stage_atrous_rate,
-                activation_fn=tf.nn.relu6,
-                scope='Conv_Cascade1',
-                reuse=reuse)
-            rpn_box_predictor_features_cascade = tf.add(rpn_box_predictor_features_cascade, rpn_features_to_crop)
-            rpn_box_predictor_features_cascade = slim.conv2d(
-                rpn_box_predictor_features_cascade,
-                self._first_stage_box_predictor_depth,
-                kernel_size=[kernel_size, kernel_size],
-                rate=self._first_stage_atrous_rate,
-                activation_fn=tf.nn.relu6,
-                scope='Conv_Cascade2',
-                reuse=reuse)
+            rpn_box_predictor_features_cascade = None
+            if self._rpn_type == 'cascade_rpn':
+                rpn_box_predictor_features_cascade = slim.conv2d(
+                    rpn_box_predictor_features,
+                    shape_utils.combined_static_and_dynamic_shape(rpn_features_to_crop)[-1],
+                    kernel_size=[kernel_size, kernel_size],
+                    rate=self._first_stage_atrous_rate,
+                    activation_fn=tf.nn.relu6,
+                    scope='Conv_Cascade1',
+                    reuse=reuse)
+                rpn_box_predictor_features_cascade = tf.add(rpn_box_predictor_features_cascade, rpn_features_to_crop)
+                rpn_box_predictor_features_cascade = slim.conv2d(
+                    rpn_box_predictor_features_cascade,
+                    self._first_stage_box_predictor_depth,
+                    kernel_size=[kernel_size, kernel_size],
+                    rate=self._first_stage_atrous_rate,
+                    activation_fn=tf.nn.relu6,
+                    scope='Conv_Cascade2',
+                    reuse=reuse)
         return (rpn_box_predictor_features, rpn_features_to_crop,
                 anchors, image_shape, rpn_box_predictor_features_cascade)
 
@@ -1103,7 +1100,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
             box_predictions = self._first_stage_box_predictor.predict(
                 [rpn_box_predictor_features],
                 num_anchors_per_location,
-                scope=self.first_stage_box_predictor_scope if scope else scope)
+                scope=self.first_stage_box_predictor_scope if not scope else scope)
 
         box_encodings = tf.concat(
             box_predictions[box_predictor.BOX_ENCODINGS], axis=1)
@@ -1834,14 +1831,20 @@ class FasterRCNNMetaArch(model.DetectionModel):
             (groundtruth_boxlists, groundtruth_classes_with_background_list,
              groundtruth_masks_list, groundtruth_weights_list
              ) = self._format_groundtruth_data(true_image_shapes)
+            # add by wjc
+            rpn_box_encodings_cascade = None
+            rpn_objectness_predictions_with_background_cascade = None
+            if self._rpn_type == 'cascade_rpn':
+                rpn_box_encodings_cascade = prediction_dict['rpn_box_encodings_cascade'],
+                rpn_objectness_predictions_with_background_cascade = prediction_dict[
+                    'rpn_objectness_predictions_with_background_cascade']
             loss_dict = self._loss_rpn(
                 prediction_dict['rpn_box_encodings'],
                 prediction_dict['rpn_objectness_predictions_with_background'],
                 prediction_dict['anchors'], groundtruth_boxlists,
                 groundtruth_classes_with_background_list, groundtruth_weights_list,
-                rpn_box_encodings_cascade=prediction_dict['rpn_box_encodings_cascade'],
-                rpn_objectness_predictions_with_background_cascade=prediction_dict[
-                    'rpn_objectness_predictions_with_background_cascade'])
+                rpn_box_encodings_cascade=rpn_box_encodings_cascade,
+                rpn_objectness_predictions_with_background_cascade=rpn_objectness_predictions_with_background_cascade)
             if self._number_of_stages > 1:
                 loss_dict.update(
                     self._loss_box_classifier(
@@ -1948,10 +1951,11 @@ class FasterRCNNMetaArch(model.DetectionModel):
             loss_dict = {localization_loss.op.name: localization_loss,
                          objectness_loss.op.name: objectness_loss}
             if self._rpn_type:
-                localization_cascade_losses = self._first_stage_localization_loss(rpn_box_encodings_cascade,
-                                                                                  batch_reg_targets,
-                                                                                  weights=sampled_reg_indices,
-                                                                                  losses_mask=losses_mask)
+                localization_cascade_losses = self._first_stage_localization_loss(
+                    tf.add(rpn_box_encodings_cascade, rpn_box_encodings),
+                    batch_reg_targets,
+                    weights=sampled_reg_indices,
+                    losses_mask=losses_mask)
                 objectness_cascade_losses = self._first_stage_objectness_loss(
                     rpn_objectness_predictions_with_background_cascade,
                     batch_one_hot_targets,
