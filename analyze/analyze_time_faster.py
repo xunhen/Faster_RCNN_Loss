@@ -13,21 +13,21 @@ from PIL import Image
 import tensorflow.contrib.slim as slim
 from object_detection.legacy import trainer
 from object_detection.builders import model_builder
-from Faster_RCNN.Model import model_builder
+from Lib import model_builder
 
 from object_detection.utils import config_util
 from object_detection.utils import ops as utils_ops
 
-from Faster_RCNN.Tools.generate_random_box import random_rpn
+from Tool.generate_random_box import random_rpn
 
 if StrictVersion(tf.__version__) < StrictVersion('1.9.0'):
     raise ImportError('Please upgrade your TensorFlow installation to v1.9.* or later!')
 from utils import label_map_util
 
-from Faster_RCNN.config import cfg
+from config import cfg
 
 import time
-from Faster_RCNN.Tools.create_txt_tf_record import parse_txt
+from Tool.create_txt_tf_record import parse_txt
 
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = os.path.join(cfg.DATASET_PATH, 'mscoco_label_map.pbtxt')
@@ -279,7 +279,7 @@ def analyze_improve_percent():
         for model_item in models:
             suffix = model_item + '_' + image_item + '_fixed'
             for divide_flag in divide_options:
-                filename=suffix
+                filename = suffix
                 if divide_flag:
                     filename += '_2'
                 filename_filter = filename + '_filter.npy'
@@ -293,14 +293,14 @@ def analyze_improve_percent():
                 result[..., 1] = summary_filter[..., 0] * 1000  # total time after filter
                 result[..., 2] = summary[..., -1] - summary_filter[..., -1]  # the number be filtered
                 result[..., 3] = result[..., 0] - result[..., 1]  # the time improved
-                result[..., 4] = result[..., 3] / result[..., 0]*100  # the percent improved
+                result[..., 4] = result[..., 3] / result[..., 0] * 100  # the percent improved
 
                 print('------------------{}------------------'.format(filename))
                 print(
                     'number of proposal | the number be filtered | total time(ms) | total time after filter | improved(ms/%)')
                 for index, number in enumerate(number_of_proposals):
                     print('{0:^10d} {1:^10d} {2[0]:^2f}ms   {2[1]:^2f}ms   {2[3]:.2f}ms/{2[4]:.2f}%'.
-                          format(number,int(result[index][2]),result[index]))
+                          format(number, int(result[index][2]), result[index]))
 
 
 def execuct_analyze_and_draw():

@@ -86,8 +86,7 @@ def parse(image_path_or_id, dataAnnFormat, coco_annFile=None, random_jittle=Fals
 
 
 def test_images(pipeline_config_path, restore_path, category_index, images, bboxes, labels=None, path_to_log='log/test',
-                only_show_proposal=False,
-                filter_fn_arg=None, rpn_type=None, image_size=(12, 8)):
+                show_with_proposal=False, filter_fn_arg=None, rpn_type=None, replace_rpn_arg=None, image_size=(12, 8)):
     batch_size = 1  # detect one image once
     configs = config_util.get_configs_from_pipeline_file(pipeline_config_path)
     model_config = configs['model']
@@ -96,17 +95,18 @@ def test_images(pipeline_config_path, restore_path, category_index, images, bbox
     graph = tf.Graph()
     with graph.as_default():
         model = model_builder.build(model_config=model_config, is_training=False, rpn_type=rpn_type,
-                                    filter_fn_arg=filter_fn_arg)
+                                    filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
 
         with tf.variable_scope('placeholder'):
             image_tensor = tf.placeholder(tf.float32, shape=(batch_size, None, None, 3), name='images')
             if rpn_type == model_builder.RPN_TYPE_WITHOUT:
-                rpn_box = tf.placeholder(tf.float32, shape=(batch_size, None, 4), name='rpn_box')
-                model.provide_rpn_box(rpn_box)
+                rpn_box_list = [tf.placeholder(tf.float32, shape=(None, 4), name='rpn_box{}'.format(i)) for i in
+                                range(batch_size)]
+                model.provide_rpn_box_list(rpn_box_list)
             if filter_fn_arg:
-                filter_box = [tf.placeholder(tf.float32, shape=(None, 4), name='filter_box{}'.format(i)) for i in
-                              range(batch_size)]
-                model.provide_filter_box(filter_box)
+                filter_box_list = [tf.placeholder(tf.float32, shape=(None, 4), name='filter_box{}'.format(i)) for i in
+                                   range(batch_size)]
+                model.provide_filter_box_list(filter_box_list)
 
         preprocessed_inputs, true_image_shapes = model.preprocess(image_tensor)
         prediction_dict = model.predict(preprocessed_inputs, true_image_shapes)
@@ -125,9 +125,10 @@ def test_images(pipeline_config_path, restore_path, category_index, images, bbox
                 image_expanded = np.expand_dims(image, axis=0)
                 feed_dict = {image_tensor: image_expanded}
                 if rpn_type == model_builder.RPN_TYPE_WITHOUT:
-                    feed_dict[rpn_box] = bboxes[index]
+                    for index_rpn, box in enumerate(rpn_box_list):
+                        feed_dict[box] = bboxes[index][index_rpn]
                 if filter_fn_arg:
-                    for index_filter, box in enumerate(filter_box):
+                    for index_filter, box in enumerate(filter_box_list):
                         feed_dict[box] = bboxes[index][index_filter]
                 output_dict_, prediction_dict_ = sess.run([output_dict, prediction_dict],
                                                           feed_dict=feed_dict,
@@ -137,31 +138,38 @@ def test_images(pipeline_config_path, restore_path, category_index, images, bbox
                 # Actual detection.
                 # output_dict = run_inference_for_single_image(image_np, detection_graph)
                 # Visualization of the results of a detection.
-                if only_show_proposal:
+                if show_with_proposal:
+                    proposal_boxes_normalized = prediction_dict_['proposal_boxes_normalized'][0]
+                    proposal_boxes_scores = prediction_dict_['proposal_boxes_scores'][0]
+                    if prediction_dict_['num_proposals'][0] < proposal_boxes_normalized.shape[0]:
+                        proposal_boxes_normalized = proposal_boxes_normalized[:prediction_dict_['num_proposals'][0]]
+                        proposal_boxes_scores = proposal_boxes_scores[:prediction_dict_['num_proposals'][0]]
                     vis_util.visualize_boxes_and_labels_on_image_array(
                         image,
-                        prediction_dict_['proposal_boxes_normalized'][0],
-                        np.ones_like(prediction_dict_['proposal_boxes_scores'][0].astype(np.uint8)),
-                        prediction_dict_['proposal_boxes_scores'][0],
+                        proposal_boxes_normalized,
+                        np.ones_like(proposal_boxes_scores, dtype=np.uint8),
+                        proposal_boxes_scores,
                         category_index,
                         instance_masks=output_dict_.get('detection_masks'),
                         use_normalized_coordinates=True,
                         skip_labels=True,
                         line_thickness=1)
-                    print(prediction_dict_['proposal_boxes_scores'])
-                else:
-                    vis_util.visualize_boxes_and_labels_on_image_array(
-                        image,
-                        output_dict_['detection_boxes'][0],
-                        output_dict_['detection_classes'][0].astype(np.uint8),
-                        output_dict_['detection_scores'][0],
-                        category_index,
-                        instance_masks=output_dict_.get('detection_masks'),
-                        use_normalized_coordinates=True,
-                        skip_labels=True,
-                        line_thickness=1)
-                    print(output_dict_['detection_scores'])
-                    print(output_dict_['detection_classes'])
+                    print('proposal_boxes_scores', proposal_boxes_scores)
+                    plt.figure(figsize=image_size)
+                    plt.imshow(image)
+
+                vis_util.visualize_boxes_and_labels_on_image_array(
+                    image,
+                    output_dict_['detection_boxes'][0],
+                    output_dict_['detection_classes'][0].astype(np.uint8),
+                    output_dict_['detection_scores'][0],
+                    category_index,
+                    instance_masks=output_dict_.get('detection_masks'),
+                    use_normalized_coordinates=True,
+                    skip_labels=True,
+                    line_thickness=1)
+                print('detection_scores', output_dict_['detection_scores'])
+                print('detection_classes', output_dict_['detection_classes'])
                 plt.figure(figsize=image_size)
                 plt.imshow(image)
                 print('vaildation number', prediction_dict_['num_proposals'])
@@ -179,24 +187,30 @@ if __name__ == '__main__':
     image_ids = [520, 536, 544]
     dataType = 'val2014'
     annFile = '{}/annotations/instances_{}.json'.format(path_to_image, dataType)
-    pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
+    pipeline_config_path = r'Model\faster_rcnn_resnet50_coco_2018_01_28\faster_rcnn_resnet50_coco_2018_01_28\pipeline.config'
     restore_path = r'Model\faster_rcnn_resnet50_coco_2018_01_28\faster_rcnn_resnet50_coco_2018_01_28\model.ckpt'
 
-    only_show_proposal = True
     random_jittle = False
+
+    show_with_proposal = False
+
     filter_fn_arg = {'filter_threshold': 0.5}
     filter_fn_arg = None
     rpn_type = model_builder.RPN_TYPE_ORGIN
+    rpn_type = model_builder.RPN_TYPE_WITHOUT
+    replace_rpn_arg = {'type': 'rpn', 'scale': 1.1}
+    # replace_rpn_arg = None
 
     bboxes = []
     images = []
     for image_id in image_ids:
         bbox, image = parse(image_id, dataAnnFormat='coco', coco_annFile=annFile,
-                                        random_jittle=random_jittle)
+                            random_jittle=random_jittle)
         bboxes.append(bbox)
         images.append(image)
 
     test_images(pipeline_config_path, restore_path, category_index, images, bboxes,
-                only_show_proposal=only_show_proposal, filter_fn_arg=filter_fn_arg, rpn_type=rpn_type)
+                show_with_proposal=show_with_proposal, filter_fn_arg=filter_fn_arg, rpn_type=rpn_type,
+                replace_rpn_arg=replace_rpn_arg)
 
     pass
