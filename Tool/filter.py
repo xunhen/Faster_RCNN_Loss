@@ -74,8 +74,6 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=
                     proposal_score_result: A float tensor with shape
                         [max_number, num_class] representing the (potentially zero
                         padded) proposal boxes for all images in the batch.
-                    validation: A int tensor with shape
-                        [,] representing the vaildative proposal boxes for the batch.
             """
         boxes = args[0]
         scores = args[1]

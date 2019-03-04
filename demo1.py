@@ -102,9 +102,7 @@ def test_images(pipeline_config_path, restore_path, category_index, images, bbox
             image_tensor = tf.placeholder(tf.float32, shape=(batch_size, None, None, 3), name='images')
             if rpn_type == model_builder.RPN_TYPE_WITHOUT:
                 rpn_box = tf.placeholder(tf.float32, shape=(batch_size, None, 4), name='rpn_box')
-                rpn_class = tf.ones_like(rpn_box, dtype=tf.int32)
-                rpn_class = rpn_class[:, :, :2]
-                model.provide_rpn_box(rpn_box, rpn_class)
+                model.provide_rpn_box(rpn_box)
             if filter_fn_arg:
                 filter_box = [tf.placeholder(tf.float32, shape=(None, 4), name='filter_box{}'.format(i)) for i in
                               range(batch_size)]
