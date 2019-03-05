@@ -56,17 +56,15 @@ flags.DEFINE_boolean(
 FLAGS = flags.FLAGS
 
 FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
-FLAGS.model_dir = 'log/train'
+FLAGS.model_dir = r'log\eval'
 # FLAGS.num_train_steps = 2000
-# FLAGS.run_once = False
-# FLAGS.checkpoint_dir = r'Model\faster_rcnn_resnet50_coco_2018_01_28\faster_rcnn_resnet50_coco_2018_01_28\model.ckpt'
+FLAGS.run_once = False
+FLAGS.checkpoint_dir = r'log\train\model.ckpt-200000'
 
 rpn_type = 'cascade_rpn'
+rpn_type = None
 filter_fn_arg = {'filter_threshold': 0.5}
 filter_fn_arg = None
-
-
-# FLAGS.checkpoint_dir = r'vgg_16_2016_08_28/vgg_16.ckpt'
 
 
 def main(unused_argv):
