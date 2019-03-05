@@ -1371,6 +1371,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
 
         with tf.name_scope('FirstStagePostprocessor'):
             if self._number_of_stages == 1:
+                # need change when cascade rpn---wjc
                 proposal_boxes, proposal_scores, num_proposals = self._postprocess_rpn(
                     prediction_dict['rpn_box_encodings'],
                     prediction_dict['rpn_objectness_predictions_with_background'],

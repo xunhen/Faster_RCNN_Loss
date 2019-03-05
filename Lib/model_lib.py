@@ -474,7 +474,7 @@ def create_estimator_and_inputs(run_config,
                                 override_eval_num_epochs=True,
                                 save_final_config=False,
                                 rpn_type=None,
-                                filter_fn_arg=None,
+                                filter_fn_arg=None, replace_rpn_arg=None,
                                 **kwargs):
     """Creates `Estimator`, input functions, and steps.
 
@@ -569,7 +569,8 @@ def create_estimator_and_inputs(run_config,
         train_steps = train_config.num_steps
 
     detection_model_fn = functools.partial(
-        model_builder.build, model_config=model_config, rpn_type=rpn_type, filter_fn_arg=filter_fn_arg)
+        model_builder.build, model_config=model_config, rpn_type=rpn_type, filter_fn_arg=filter_fn_arg,
+        replace_rpn_arg=replace_rpn_arg)
 
     # Create the input functions for TRAIN/EVAL/PREDICT.
     train_input_fn = create_train_input_fn(
