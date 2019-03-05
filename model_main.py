@@ -116,15 +116,18 @@ def main(unused_argv):
     rpn_type = 'cascade_rpn'
     filter_fn_arg = {'filter_threshold': 0.5}
     filter_fn_arg = None
-
     replace_rpn_arg = None
-    train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
 
+    # print(rpn_type)
+    # train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+
+    rpn_type = 'without_rpn'
     replace_rpn_arg = {'type': 'gt'}
-    scales = [0.8, 0.9, 1.0, 1.1, 1.2]
+    scales = [1.05, 0.95]
     for scale in scales:
         replace_rpn_arg['scale'] = scale
         FLAGS.model_dir = r'log\eval\cascade{}'.format(scale)
+        print(rpn_type, replace_rpn_arg)
         train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
     pass
 

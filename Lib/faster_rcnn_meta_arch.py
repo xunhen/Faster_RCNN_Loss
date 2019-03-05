@@ -1933,17 +1933,20 @@ class FasterRCNNMetaArch(model.DetectionModel):
             # add by wjc
             rpn_box_encodings_cascade = None
             rpn_objectness_predictions_with_background_cascade = None
-            if self._rpn_type == 'cascade_rpn':
-                rpn_box_encodings_cascade = prediction_dict['rpn_box_encodings_cascade']
-                rpn_objectness_predictions_with_background_cascade = prediction_dict[
-                    'rpn_objectness_predictions_with_background_cascade']
-            loss_dict = self._loss_rpn(
-                prediction_dict['rpn_box_encodings'],
-                prediction_dict['rpn_objectness_predictions_with_background'],
-                prediction_dict['anchors'], groundtruth_boxlists,
-                groundtruth_classes_with_background_list, groundtruth_weights_list,
-                rpn_box_encodings_cascade=rpn_box_encodings_cascade,
-                rpn_objectness_predictions_with_background_cascade=rpn_objectness_predictions_with_background_cascade)
+            loss_dict = dict()
+            if self._rpn_type != 'without_rpn':
+                if self._rpn_type == 'cascade_rpn':
+                    rpn_box_encodings_cascade = prediction_dict['rpn_box_encodings_cascade']
+                    rpn_objectness_predictions_with_background_cascade = prediction_dict[
+                        'rpn_objectness_predictions_with_background_cascade']
+                loss_dict = self._loss_rpn(
+                    prediction_dict['rpn_box_encodings'],
+                    prediction_dict['rpn_objectness_predictions_with_background'],
+                    prediction_dict['anchors'], groundtruth_boxlists,
+                    groundtruth_classes_with_background_list, groundtruth_weights_list,
+                    rpn_box_encodings_cascade=rpn_box_encodings_cascade,
+                    rpn_objectness_predictions_with_background_cascade=rpn_objectness_predictions_with_background_cascade)
+                pass
             if self._number_of_stages > 1:
                 loss_dict.update(
                     self._loss_box_classifier(
