@@ -58,13 +58,17 @@ FLAGS = flags.FLAGS
 FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
 FLAGS.model_dir = r'log\eval'
 # FLAGS.num_train_steps = 2000
-FLAGS.run_once = False
+FLAGS.run_once = True
 FLAGS.checkpoint_dir = r'log\train\model.ckpt-200000'
 
 rpn_type = 'cascade_rpn'
 rpn_type = None
 filter_fn_arg = {'filter_threshold': 0.5}
 filter_fn_arg = None
+replace_rpn_arg = {'type': 'gt', 'scale': 1.0}
+replace_rpn_arg = {'type': 'gt', 'scale': 0.9}
+replace_rpn_arg = {'type': 'gt', 'scale': 1.1}
+replace_rpn_arg = None
 
 
 def main(unused_argv):
@@ -80,7 +84,7 @@ def main(unused_argv):
         sample_1_of_n_eval_examples=FLAGS.sample_1_of_n_eval_examples,
         sample_1_of_n_eval_on_train_examples=(
             FLAGS.sample_1_of_n_eval_on_train_examples),
-        rpn_type=rpn_type)
+        rpn_type=rpn_type,filter_fn_arg=filter_fn_arg,replace_rpn_arg=replace_rpn_arg)
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
     eval_input_fns = train_and_eval_dict['eval_input_fns']
