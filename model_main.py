@@ -55,23 +55,8 @@ flags.DEFINE_boolean(
 )
 FLAGS = flags.FLAGS
 
-FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
-FLAGS.model_dir = r'log\eval'
-# FLAGS.num_train_steps = 2000
-FLAGS.run_once = True
-FLAGS.checkpoint_dir = r'log\train\model.ckpt-200000'
 
-rpn_type = 'cascade_rpn'
-rpn_type = None
-filter_fn_arg = {'filter_threshold': 0.5}
-filter_fn_arg = None
-replace_rpn_arg = {'type': 'gt', 'scale': 1.0}
-replace_rpn_arg = {'type': 'gt', 'scale': 0.9}
-replace_rpn_arg = {'type': 'gt', 'scale': 1.1}
-replace_rpn_arg = None
-
-
-def main(unused_argv):
+def train_and_eval(rpn_type=None, filter_fn_arg=None, replace_rpn_arg=None):
     flags.mark_flag_as_required('model_dir')
     flags.mark_flag_as_required('pipeline_config_path')
     config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, save_checkpoints_steps=10000)
@@ -84,7 +69,7 @@ def main(unused_argv):
         sample_1_of_n_eval_examples=FLAGS.sample_1_of_n_eval_examples,
         sample_1_of_n_eval_on_train_examples=(
             FLAGS.sample_1_of_n_eval_on_train_examples),
-        rpn_type=rpn_type,filter_fn_arg=filter_fn_arg,replace_rpn_arg=replace_rpn_arg)
+        rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
     eval_input_fns = train_and_eval_dict['eval_input_fns']
@@ -119,6 +104,29 @@ def main(unused_argv):
 
         # Currently only a single Eval Spec is allowed.
         tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
+    pass
+
+
+def main(unused_argv):
+    FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
+    FLAGS.model_dir = r'log\eval\cascade'
+    FLAGS.run_once = True
+    FLAGS.checkpoint_dir = r'log\train'
+
+    rpn_type = 'cascade_rpn'
+    filter_fn_arg = {'filter_threshold': 0.5}
+    filter_fn_arg = None
+
+    replace_rpn_arg = None
+    train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+
+    replace_rpn_arg = {'type': 'gt'}
+    scales = [0.8, 0.9, 1.0, 1.1, 1.2]
+    for scale in scales:
+        replace_rpn_arg['scale'] = scale
+        FLAGS.model_dir = r'log\eval\cascade{}'.format(scale)
+        train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+    pass
 
 
 if __name__ == '__main__':
