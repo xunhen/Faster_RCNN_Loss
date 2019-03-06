@@ -1371,17 +1371,17 @@ class FasterRCNNMetaArch(model.DetectionModel):
 
         with tf.name_scope('FirstStagePostprocessor'):
             if self._number_of_stages == 1:
-                # need change when cascade rpn---wjc
+                # need rpn otherwise will error!!!
                 if self._rpn_type == 'without_rpn':
                     if self._replace_rpn_arg:
                         if self._replace_rpn_arg.get('type', 'gt') == 'gt':
-                            proposal_bboxes, proposal_scores, num_proposals = self._get_gt_data(
+                            proposal_boxes, proposal_scores, num_proposals = self._get_gt_data(
                                 scale=self._replace_rpn_arg.get('scale', 1.0))
                         else:
-                            proposal_bboxes, proposal_scores, num_proposals = self._get_rpn_data(
+                            proposal_boxes, proposal_scores, num_proposals = self._get_rpn_data(
                                 scale=self._replace_rpn_arg.get('scale', 1.0))
                     else:
-                        proposal_bboxes, proposal_scores, num_proposals = self._get_rpn_data()
+                        proposal_boxes, proposal_scores, num_proposals = self._get_rpn_data()
                     proposal_scores = tf.squeeze(proposal_scores, -1)
                 else:
                     if self._rpn_type == 'cascade_rpn':

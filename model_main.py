@@ -112,9 +112,11 @@ def main(unused_argv):
     FLAGS.pipeline_config_path = r'Model\pipeline\pipeline_resnet50.config'
     FLAGS.model_dir = r'log\eval\cascade'
     FLAGS.run_once = True
-    FLAGS.checkpoint_dir = r'log\train'
 
-    rpn_type = 'cascade_rpn'
+    rpn_type = 'orginal_rpn'
+    FLAGS.checkpoint_dir = r'log\train_org'
+    # FLAGS.checkpoint_dir = r'log\train'
+
     filter_fn_arg = {'filter_threshold': 0.5}
     filter_fn_arg = None
     replace_rpn_arg = None
@@ -122,20 +124,21 @@ def main(unused_argv):
     number_of_stages = 1
 
     print(rpn_type)
-    FLAGS.model_dir = r'log\eval\cascade{}'.format(number_of_stages if number_of_stages else '')
+    FLAGS.model_dir = r'log\eval\orginal_rpn{}'.format(number_of_stages if number_of_stages else '')
     train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
                    number_of_stages=number_of_stages)
 
-    rpn_type = 'without_rpn'
-    replace_rpn_arg = {'type': 'gt'}
-    scales = [0.9, 0.95, 1.0, 1.05, 1.1]
-    for scale in scales:
-        replace_rpn_arg['scale'] = scale
-        FLAGS.model_dir = r'log\eval\cascade{}_{}{}'.format(number_of_stages if number_of_stages else '', 'gt', scale)
-        print(rpn_type, replace_rpn_arg)
-        train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
-                       number_of_stages=number_of_stages)
-    pass
+    # number_of_stages=None
+    # rpn_type = 'without_rpn'
+    # replace_rpn_arg = {'type': 'gt'}
+    # scales = [0.9, 0.95, 1.0, 1.05, 1.1]
+    # for scale in scales:
+    #     replace_rpn_arg['scale'] = scale
+    #     FLAGS.model_dir = r'log\eval\cascade{}_{}{}'.format(number_of_stages if number_of_stages else '', 'gt', scale)
+    #     print(rpn_type, replace_rpn_arg)
+    #     train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
+    #                    number_of_stages=number_of_stages)
+    # pass
 
 
 if __name__ == '__main__':
