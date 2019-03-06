@@ -56,7 +56,7 @@ flags.DEFINE_boolean(
 FLAGS = flags.FLAGS
 
 
-def train_and_eval(rpn_type=None, filter_fn_arg=None, replace_rpn_arg=None):
+def train_and_eval(rpn_type=None, filter_fn_arg=None, replace_rpn_arg=None, number_of_stages=None):
     flags.mark_flag_as_required('model_dir')
     flags.mark_flag_as_required('pipeline_config_path')
     config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, save_checkpoints_steps=10000)
@@ -69,7 +69,8 @@ def train_and_eval(rpn_type=None, filter_fn_arg=None, replace_rpn_arg=None):
         sample_1_of_n_eval_examples=FLAGS.sample_1_of_n_eval_examples,
         sample_1_of_n_eval_on_train_examples=(
             FLAGS.sample_1_of_n_eval_on_train_examples),
-        rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+        rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
+        number_of_stages=number_of_stages)
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
     eval_input_fns = train_and_eval_dict['eval_input_fns']
@@ -118,17 +119,22 @@ def main(unused_argv):
     filter_fn_arg = None
     replace_rpn_arg = None
 
-    # print(rpn_type)
-    # train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+    number_of_stages = 1
+
+    print(rpn_type)
+    FLAGS.model_dir = r'log\eval\cascade{}'.format(number_of_stages if number_of_stages else '')
+    train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
+                   number_of_stages=number_of_stages)
 
     rpn_type = 'without_rpn'
     replace_rpn_arg = {'type': 'gt'}
-    scales = [1.05, 0.95]
+    scales = [0.9, 0.95, 1.0, 1.05, 1.1]
     for scale in scales:
         replace_rpn_arg['scale'] = scale
-        FLAGS.model_dir = r'log\eval\cascade{}'.format(scale)
+        FLAGS.model_dir = r'log\eval\cascade{}_{}{}'.format(number_of_stages if number_of_stages else '', 'gt', scale)
         print(rpn_type, replace_rpn_arg)
-        train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg)
+        train_and_eval(rpn_type=rpn_type, filter_fn_arg=filter_fn_arg, replace_rpn_arg=replace_rpn_arg,
+                       number_of_stages=number_of_stages)
     pass
 
 

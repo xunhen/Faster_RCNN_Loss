@@ -1372,12 +1372,33 @@ class FasterRCNNMetaArch(model.DetectionModel):
         with tf.name_scope('FirstStagePostprocessor'):
             if self._number_of_stages == 1:
                 # need change when cascade rpn---wjc
-                proposal_boxes, proposal_scores, num_proposals = self._postprocess_rpn(
-                    prediction_dict['rpn_box_encodings'],
-                    prediction_dict['rpn_objectness_predictions_with_background'],
-                    prediction_dict['anchors'],
-                    true_image_shapes,
-                    true_image_shapes)
+                if self._rpn_type == 'without_rpn':
+                    if self._replace_rpn_arg:
+                        if self._replace_rpn_arg.get('type', 'gt') == 'gt':
+                            proposal_bboxes, proposal_scores, num_proposals = self._get_gt_data(
+                                scale=self._replace_rpn_arg.get('scale', 1.0))
+                        else:
+                            proposal_bboxes, proposal_scores, num_proposals = self._get_rpn_data(
+                                scale=self._replace_rpn_arg.get('scale', 1.0))
+                    else:
+                        proposal_bboxes, proposal_scores, num_proposals = self._get_rpn_data()
+                    proposal_scores = tf.squeeze(proposal_scores, -1)
+                else:
+                    if self._rpn_type == 'cascade_rpn':
+                        rpn_box_encodings = tf.add(prediction_dict['rpn_box_encodings'],
+                                                   prediction_dict['rpn_box_encodings_cascade'])
+                        rpn_objectness_predictions_with_background = prediction_dict[
+                            'rpn_objectness_predictions_with_background_cascade']
+                    else:
+                        rpn_box_encodings = prediction_dict['rpn_box_encodings']
+                        rpn_objectness_predictions_with_background = prediction_dict[
+                            'rpn_objectness_predictions_with_background']
+                    proposal_boxes, proposal_scores, num_proposals = self._postprocess_rpn(
+                        rpn_box_encodings,
+                        rpn_objectness_predictions_with_background,
+                        prediction_dict['anchors'],
+                        true_image_shapes,
+                        true_image_shapes)
                 return {
                     fields.DetectionResultFields.detection_boxes: proposal_boxes,
                     fields.DetectionResultFields.detection_scores: proposal_scores,

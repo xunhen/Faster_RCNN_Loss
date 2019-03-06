@@ -475,6 +475,7 @@ def create_estimator_and_inputs(run_config,
                                 save_final_config=False,
                                 rpn_type=None,
                                 filter_fn_arg=None, replace_rpn_arg=None,
+                                number_of_stages=None,
                                 **kwargs):
     """Creates `Estimator`, input functions, and steps.
 
@@ -549,6 +550,8 @@ def create_estimator_and_inputs(run_config,
     configs = merge_external_params_with_configs(
         configs, hparams, kwargs_dict=kwargs)
     model_config = configs['model']
+    if number_of_stages and 0 < number_of_stages < 4:
+        model_config.faster_rcnn.number_of_stages = number_of_stages
     train_config = configs['train_config']
     train_input_config = configs['train_input_config']
     eval_config = configs['eval_config']
