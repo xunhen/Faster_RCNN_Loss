@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 
 from distutils.version import StrictVersion
 from Lib import model_builder
@@ -12,11 +13,12 @@ if StrictVersion(tf.__version__) < StrictVersion('1.9.0'):
 class Detection(object):
     def __init__(self, pipeline_config_path, restore_path):
         self._rpn_type = None
-        self._replce_rpn_arg = None
         self._filter_fn_arg = None
-        self._graph = None
         self._pipeline_config_path = pipeline_config_path
         self._restore_path = restore_path
+        self._replace_rpn_arg=None
+
+        self._graph = None
         pass
 
     def init_some(self):
@@ -29,7 +31,7 @@ class Detection(object):
         print(self.__pipeline_config_path)
         print(self._restore_path)
 
-    def _build_model(self):
+    def build_model(self):
         batch_size = 1  # detect one image once
         configs = config_util.get_configs_from_pipeline_file(self._pipeline_config_path)
         model_config = configs['model']
@@ -61,5 +63,17 @@ class Detection(object):
         return output_dict_['detection_boxes'][0]
 
 
-if __name__ == '__main':
+if __name__ == '__main__':
+    pipeline_config_path = r'..\Model\pipeline\pipeline_resnet50.config'
+    restore_path = r'..\log\train_org'
+    image_path = r'F:\PostGraduate\DataSet\CarDataSetOfHe\cyc\car6228.jpg'
+    detection = Detection(pipeline_config_path, restore_path)
+    detection.build_model()
+    image = Image.open(image_path + '.jpg')
+    (im_width, im_height) = image.size
+    image = np.array(image.getdata()).reshape(
+        (im_height, im_width, 3)).astype(np.uint8)
+    image = np.expand_dims(image, 0)
+    print(detection.detection(image))
+    print(detection.detection(image))
     pass
