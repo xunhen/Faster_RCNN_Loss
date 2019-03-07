@@ -65,15 +65,14 @@ class Detection(object):
 
 if __name__ == '__main__':
     pipeline_config_path = r'..\Model\pipeline\pipeline_resnet50.config'
-    restore_path = r'..\log\train_org'
-    image_path = r'F:\PostGraduate\DataSet\CarDataSetOfHe\cyc\car6228.jpg'
+    restore_path = r'..\log\train_org\model.ckpt-200000'
+    image_path = r'D:\DataSet\CarDataSetOfHe\cyc\car6228.jpg'
     detection = Detection(pipeline_config_path, restore_path)
     detection.build_model()
-    image = Image.open(image_path + '.jpg')
+    image = Image.open(image_path)
     (im_width, im_height) = image.size
     image = np.array(image.getdata()).reshape(
         (im_height, im_width, 3)).astype(np.uint8)
-    image = np.expand_dims(image, 0)
     print(detection.detection(image))
     print(detection.detection(image))
     pass
