@@ -6,7 +6,7 @@ import numpy as np
 
 
 def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=None, filter_threshold=0.5,
-                min_number=1, max_number=None):
+                min_number=5, max_number=None):
     """Returns proposal_boxes_result and validation.
 
         Args:
@@ -81,21 +81,21 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=
         keep = args[2]
         if proposal_classes is not None:
             classes = args[4]
-        max_number = tf.where(tf.greater(min_number, args[3]), min_number, args[3])
-        max_number = tf.maximum(max_number, min_number)
+        #_max_number = tf.where(tf.greater(min_number, args[3]), min_number, args[3])
+        _max_number = tf.maximum(args[3], min_number)
         result_indice = tf.where(keep)
         result_indice = tf.squeeze(result_indice, axis=-1)
         boxes_result = tf.gather(boxes, result_indice)
         boxes_result = shape_utils.pad_or_clip_tensor(
-            boxes_result, max_number)
+            boxes_result, _max_number)
         score_result = tf.gather(scores, result_indice)
         score_result = shape_utils.pad_or_clip_tensor(
-            score_result, max_number)
+            score_result, _max_number)
         result = [boxes_result, score_result]
         if proposal_classes is not None:
             class_result = tf.gather(classes, result_indice)
             class_result = shape_utils.pad_or_clip_tensor(
-                class_result, max_number)
+                class_result, _max_number)
             result.append(class_result)
         return result
 

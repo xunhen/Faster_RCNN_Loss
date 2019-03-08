@@ -102,13 +102,16 @@ class Detection(object):
                                            prediction_dict_['num_proposals'][0]) / (self._total + 1)
             self._average_time = (self._average_time * self._total + (toc - tic) * 1000) / (self._total + 1)
             self._total += 1
-            print('filtered number: '.format(self._first_stage_max_proposals - prediction_dict_['num_proposals'][0]))
-            print('detection timer: {} ms'.format(toc - tic))
+            print('filtered number: ', self._first_stage_max_proposals - prediction_dict_['num_proposals'][0])
+            print('detection timer: {} ms'.format((toc - tic) * 1000))
             print('average filtered number: ', self._average_filter_bboxes)
             print('average detection timer: {} ms'.format(self._average_time))
         print('------------detection_end------------')
         # return [output_dict_['detection_boxes'][0], output_dict_['detection_classes'][0]]
         return [np.array(result, dtype='double'), np.array(bboxes, dtype='double')]
+
+    def finished(self):
+        self._sess.close()
 
 
 if __name__ == '__main__':
@@ -123,6 +126,16 @@ if __name__ == '__main__':
         (im_height, im_width, 3)).astype(np.uint8)
     image_path = r'F:\\PostGraduate\\Projects\\background\\video\\pre\\278.jpg'
     image_gray = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    print(detection.detection(image, image_gray))
-    print(detection.detection(image, image_gray))
+
+    image_path = r'F:\\PostGraduate\\Projects\\background\\video\\post\\{}.jpg'
+    gray_path = r'F:\\PostGraduate\\Projects\\background\\video\\pre\\{}.jpg'
+    for i in range(1100, 100000):
+        image = Image.open(image_path.format(i + 1))
+        (im_width, im_height) = image.size
+        image = np.array(image.getdata()).reshape(
+            (im_height, im_width, 3)).astype(np.uint8)
+        image_gray = cv2.imread(gray_path.format(i + 1), cv2.IMREAD_GRAYSCALE)
+        print('-----------------', i, '-------------------')
+        print(detection.detection(image, image_gray))
+        print(detection.detection(image, image_gray))
     pass

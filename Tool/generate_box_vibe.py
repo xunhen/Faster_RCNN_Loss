@@ -58,7 +58,10 @@ class Generate_Box_By_ViBe(object):
 
 
 if __name__ == '__main__':
-    image = cv2.imread('F:/PostGraduate/Projects/background/video/pre/910.jpg', cv2.IMREAD_GRAYSCALE)
+    image = cv2.imread('F:/PostGraduate/Projects/background/video/pre/1.jpg', cv2.IMREAD_GRAYSCALE)
+    print(image)
+    #gray = np.zeros([300, 300, 1], dtype=np.uint8)
+    print(image.dtype)
     generate = Generate_Box_By_ViBe()
-    generate.processAndgenerate(image)
+    print(generate.processAndgenerate(np.array(image)))
     cv2.waitKey()
