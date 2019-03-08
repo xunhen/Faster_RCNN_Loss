@@ -5,7 +5,8 @@ from object_detection.core import box_list_ops
 import numpy as np
 
 
-def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=0.5, min_number=1, max_number=None):
+def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=None, filter_threshold=0.5,
+                min_number=1, max_number=None):
     """Returns proposal_boxes_result and validation.
 
         Args:
@@ -78,6 +79,8 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=
         boxes = args[0]
         scores = args[1]
         keep = args[2]
+        if proposal_classes is not None:
+            classes = args[4]
         max_number = tf.where(tf.greater(min_number, args[3]), min_number, args[3])
         max_number = tf.maximum(max_number, min_number)
         result_indice = tf.where(keep)
@@ -88,20 +91,43 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, filter_threshold=
         score_result = tf.gather(scores, result_indice)
         score_result = shape_utils.pad_or_clip_tensor(
             score_result, max_number)
-        return [boxes_result, score_result]
+        result = [boxes_result, score_result]
+        if proposal_classes is not None:
+            class_result = tf.gather(classes, result_indice)
+            class_result = shape_utils.pad_or_clip_tensor(
+                class_result, max_number)
+            result.append(class_result)
+        return result
 
-    proposal_boxes_result, proposal_score_result = shape_utils.static_or_dynamic_map_fn(_per_batch_gather_padding,
-                                                                                        [proposal_boxes,
-                                                                                         proposal_scores,
-                                                                                         keeps,
-                                                                                         tf.fill([proposal_boxes_shape[
+    if proposal_classes is not None:
+        proposal_boxes_result, proposal_score_result, proposal_class_result = shape_utils.static_or_dynamic_map_fn(
+            _per_batch_gather_padding,
+            [proposal_boxes,
+             proposal_scores,
+             keeps,
+             tf.fill(
+                 [proposal_boxes_shape[
+                      0], ],
+                 max_numbers), proposal_classes], dtype=[tf.float32, tf.float32, tf.float32])
+
+        # test using
+        # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
+
+        return proposal_boxes_result, proposal_score_result, proposal_class_result, validation, max_numbers  # change ???
+    else:
+        proposal_boxes_result, proposal_score_result = shape_utils.static_or_dynamic_map_fn(_per_batch_gather_padding,
+                                                                                            [proposal_boxes,
+                                                                                             proposal_scores,
+                                                                                             keeps,
+                                                                                             tf.fill(
+                                                                                                 [proposal_boxes_shape[
                                                                                                       0], ],
                                                                                                  max_numbers)])
 
-    # test using
-    # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
+        # test using
+        # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
 
-    return proposal_boxes_result, proposal_score_result, validation, max_numbers  # change ???
+        return proposal_boxes_result, proposal_score_result, validation, max_numbers  # change ???
 
 
 if __name__ == '__main__':

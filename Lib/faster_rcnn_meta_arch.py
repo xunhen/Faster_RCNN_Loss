@@ -1875,6 +1875,17 @@ class FasterRCNNMetaArch(model.DetectionModel):
             change_coordinate_frame=True,
             num_valid_boxes=num_proposals,
             masks=mask_predictions_batch)
+
+        # add by wjc and not support the mask
+        if not self._is_training and self._filter_fn:
+            filter_boxes_list = tf.convert_to_tensor(self._get_filter_box())
+            filter_boxes = filter_boxes_list
+            nmsed_boxes, nmsed_scores, nmsed_classes, num_detections, max_proposals_filter = self._filter_fn(
+                nmsed_boxes,
+                filter_boxes,
+                nmsed_scores,
+                proposal_classes=nmsed_classes)
+
         detections = {
             fields.DetectionResultFields.detection_boxes: nmsed_boxes,
             fields.DetectionResultFields.detection_scores: nmsed_scores,
