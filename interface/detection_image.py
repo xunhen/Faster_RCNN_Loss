@@ -82,7 +82,7 @@ class Detection(object):
             print('get filter bboxes end!')
             if len(bboxes) == 0:
                 return None
-            print('filter_boxes:\n', bboxes)
+            print('filter_boxes: ', bboxes.shape)
             feed_dict[self._filter_box_list[0]] = bboxes  # only batch_size=1
         print('run begin!')
         tic = time.time()
@@ -96,14 +96,14 @@ class Detection(object):
             (output_dict_['detection_boxes'][0][:int(number)],
              np.expand_dims(output_dict_['detection_scores'][0][:int(number)], axis=1),
              np.expand_dims(output_dict_['detection_classes'][0][:int(number)], axis=1)), axis=1)
-        print('result:\n', result)
+        print('result: ', result.shape)
+        print('filtered number: ', self._first_stage_max_proposals - prediction_dict_['num_proposals'][0])
+        print('detection timer: {} ms'.format((toc - tic) * 1000))
         if need_count == 1:
             self._average_filter_bboxes = (self._average_filter_bboxes * self._total + self._first_stage_max_proposals -
                                            prediction_dict_['num_proposals'][0]) / (self._total + 1)
             self._average_time = (self._average_time * self._total + (toc - tic) * 1000) / (self._total + 1)
             self._total += 1
-            print('filtered number: ', self._first_stage_max_proposals - prediction_dict_['num_proposals'][0])
-            print('detection timer: {} ms'.format((toc - tic) * 1000))
             print('average filtered number: ', self._average_filter_bboxes)
             print('average detection timer: {} ms'.format(self._average_time))
         print('------------detection_end------------')

@@ -442,6 +442,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
 
         self._first_stage_nms_fn = first_stage_non_max_suppression_fn
         self._first_stage_max_proposals = first_stage_max_proposals
+        self._first_stage_max_proposals_backup = first_stage_max_proposals
         self._use_static_shapes = use_static_shapes
 
         self._first_stage_localization_loss = (
@@ -666,6 +667,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
         Raises:
           ValueError: If `predict` is called before `preprocess`.
         """
+        self._first_stage_max_proposals = self._first_stage_max_proposals_backup
         (rpn_box_predictor_features, rpn_features_to_crop, anchors_boxlist,
          image_shape, rpn_box_predictor_features_cascade) = self._extract_rpn_feature_maps(preprocessed_inputs)
         prediction_dict = dict()
@@ -1880,6 +1882,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
         if not self._is_training and self._filter_fn:
             filter_boxes_list = tf.convert_to_tensor(self._get_filter_box())
             filter_boxes = filter_boxes_list
+
+            # need change the max_proposals_filter
             nmsed_boxes, nmsed_scores, nmsed_classes, num_detections, max_proposals_filter = self._filter_fn(
                 nmsed_boxes,
                 filter_boxes,

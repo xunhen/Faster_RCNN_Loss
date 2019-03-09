@@ -6,7 +6,7 @@ import numpy as np
 
 
 def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=None, filter_threshold=0.5,
-                min_number=5, max_number=None):
+                min_number=1, max_number=None):
     """Returns proposal_boxes_result and validation.
 
         Args:
@@ -50,6 +50,7 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=
     keeps = tf.greater_equal(proposal_bg_areas_iou, filter_threshold)
     validation = tf.reduce_sum(tf.to_int32(keeps), axis=1)
     max_numbers = tf.reduce_max(validation)
+    max_numbers = tf.maximum(max_numbers, min_number)
 
     def _per_batch_gather_padding(args):
         """Returns proposal_boxes_result, proposal_score_result and validation.
@@ -80,22 +81,20 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=
         scores = args[1]
         keep = args[2]
         if proposal_classes is not None:
-            classes = args[4]
-        #_max_number = tf.where(tf.greater(min_number, args[3]), min_number, args[3])
-        _max_number = tf.maximum(args[3], min_number)
+            classes = args[3]
         result_indice = tf.where(keep)
         result_indice = tf.squeeze(result_indice, axis=-1)
         boxes_result = tf.gather(boxes, result_indice)
         boxes_result = shape_utils.pad_or_clip_tensor(
-            boxes_result, _max_number)
+            boxes_result, max_numbers)
         score_result = tf.gather(scores, result_indice)
         score_result = shape_utils.pad_or_clip_tensor(
-            score_result, _max_number)
+            score_result, max_numbers)
         result = [boxes_result, score_result]
         if proposal_classes is not None:
             class_result = tf.gather(classes, result_indice)
             class_result = shape_utils.pad_or_clip_tensor(
-                class_result, _max_number)
+                class_result, max_numbers)
             result.append(class_result)
         return result
 
@@ -104,29 +103,19 @@ def filter_bbox(proposal_boxes, filter_boxes, proposal_scores, proposal_classes=
             _per_batch_gather_padding,
             [proposal_boxes,
              proposal_scores,
-             keeps,
-             tf.fill(
-                 [proposal_boxes_shape[
-                      0], ],
-                 max_numbers), proposal_classes], dtype=[tf.float32, tf.float32, tf.float32])
+             keeps, proposal_classes], dtype=[tf.float32, tf.float32, tf.float32])
 
         # test using
         # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
-
         return proposal_boxes_result, proposal_score_result, proposal_class_result, validation, max_numbers  # change ???
     else:
         proposal_boxes_result, proposal_score_result = shape_utils.static_or_dynamic_map_fn(_per_batch_gather_padding,
                                                                                             [proposal_boxes,
                                                                                              proposal_scores,
-                                                                                             keeps,
-                                                                                             tf.fill(
-                                                                                                 [proposal_boxes_shape[
-                                                                                                      0], ],
-                                                                                                 max_numbers)])
+                                                                                             keeps])
 
         # test using
         # return proposal_boxes_result, vaildation, proposal_bg_areas,proposal_bg_ious,proposal_bg_areas_iou
-
         return proposal_boxes_result, proposal_score_result, validation, max_numbers  # change ???
 
 
